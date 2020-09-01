@@ -234,7 +234,7 @@ public class FlutterAppauthPlugin implements FlutterPlugin, MethodCallHandler, P
                 }
             };
             if (tokenRequestParameters.discoveryUrl != null) {
-                AuthorizationServiceConfiguration.fetchFromUrl(Uri.parse(tokenRequestParameters.discoveryUrl), callback);
+                fetchFromUrl(Uri.parse(tokenRequestParameters.discoveryUrl), callback);
             } else {
                 AuthorizationServiceConfiguration.fetchFromIssuer(Uri.parse(tokenRequestParameters.issuer), callback);
 
@@ -255,7 +255,7 @@ public class FlutterAppauthPlugin implements FlutterPlugin, MethodCallHandler, P
             performTokenRequest(serviceConfiguration, tokenRequestParameters);
         } else {
             if (tokenRequestParameters.discoveryUrl != null) {
-                AuthorizationServiceConfiguration.fetchFromUrl(Uri.parse(tokenRequestParameters.discoveryUrl), new AuthorizationServiceConfiguration.RetrieveConfigurationCallback() {
+                AuthorizationServiceConfiguration.RetrieveConfigurationCallback callback = new AuthorizationServiceConfiguration.RetrieveConfigurationCallback() {
                     @Override
                     public void onFetchConfigurationCompleted(@Nullable AuthorizationServiceConfiguration serviceConfiguration, @Nullable AuthorizationException ex) {
                         if (ex == null) {
@@ -264,8 +264,9 @@ public class FlutterAppauthPlugin implements FlutterPlugin, MethodCallHandler, P
                             finishWithDiscoveryError(ex);
                         }
                     }
-                });
-
+                };
+                fetchFromUrl(Uri.parse(tokenRequestParameters.discoveryUrl), callback);
+                
             } else {
 
                 AuthorizationServiceConfiguration.fetchFromIssuer(Uri.parse(tokenRequestParameters.issuer), new AuthorizationServiceConfiguration.RetrieveConfigurationCallback() {
@@ -422,6 +423,18 @@ public class FlutterAppauthPlugin implements FlutterPlugin, MethodCallHandler, P
             }
         } else {
             finishWithError(exchangeCode ? AUTHORIZE_AND_EXCHANGE_CODE_ERROR_CODE : AUTHORIZE_ERROR_CODE, String.format(AUTHORIZE_ERROR_MESSAGE_FORMAT, authException.error, authException.errorDescription));
+        }
+    }
+
+    /**
+     * Adjusting to support http on Android.
+     * Copied from https://github.com/Cir0X/flutter_appauth/commit/b2e8716dc684acfbf8ca805908a3d4081a990065
+     */
+    private void fetchFromUrl(Uri uri, AuthorizationServiceConfiguration.RetrieveConfigurationCallback callback) {
+        if (allowInsecureConnections) {
+            AuthorizationServiceConfiguration.fetchFromUrl(uri, callback, InsecureConnectionBuilder.INSTANCE);
+        } else {
+            AuthorizationServiceConfiguration.fetchFromUrl(uri, callback);
         }
     }
 
